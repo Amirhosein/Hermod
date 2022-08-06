@@ -3,22 +3,24 @@ package broker
 import (
 	"context"
 	"sync"
+	"therealbroker/internal/model"
 	"therealbroker/pkg/broker"
 	"time"
 )
 
 type Module struct {
-	subscribers   map[string][]chan broker.Message
-	messages      []broker.Message
+	subscribers   map[string]model.Subject
+	messages      map[int]broker.Message
 	IsClosed      bool
-	ListenersLock sync.Mutex
+	ListenersLock sync.RWMutex
 }
 
 func NewModule() broker.Broker {
 	return &Module{
-		subscribers:   make(map[string][]chan broker.Message),
+		subscribers:   make(map[string]model.Subject),
+		messages:      make(map[int]broker.Message),
 		IsClosed:      false,
-		ListenersLock: sync.Mutex{},
+		ListenersLock: sync.RWMutex{},
 	}
 }
 
@@ -28,6 +30,7 @@ func (m *Module) Close() error {
 	}
 
 	m.IsClosed = true
+
 	return nil
 }
 
@@ -35,34 +38,36 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 	if m.IsClosed {
 		return -1, broker.ErrUnavailable
 	}
-
-	for _, listener := range m.subscribers[subject] {
-		if cap(listener) != len(listener) {
-
-			listener <- msg
-		}
-	}
-
-	msg.Id = len(m.messages)
-	// msg.IsExpired = false
-	m.messages = append(m.messages, msg)
-
-	if msg.Expiration != 0 {
-		go func(msg *broker.Message) {
-			time.Sleep(msg.Expiration)
-			m.ListenersLock.Lock()
-			defer m.ListenersLock.Unlock()
-			for i, msg := range m.messages {
-				if msg.Id == i {
-					m.messages = append(m.messages[:i], m.messages[i+1:]...)
-					break
-				}
+	select {
+	case <-ctx.Done():
+		return -1, ctx.Err()
+	default:
+		for _, listener := range m.subscribers[subject].Subscribers {
+			if cap(listener.Channel) != len(listener.Channel) {
+				listener.Channel <- msg
 			}
-			// msg.IsExpired = true
-		}(&msg)
-	}
+		}
 
-	return msg.Id, nil
+		msg.Id = len(m.messages)
+
+		m.ListenersLock.Lock()
+		m.messages[msg.Id] = msg
+		m.ListenersLock.Unlock()
+
+		if msg.Expiration != 0 {
+			go func(msg *broker.Message) {
+				ticker := time.NewTicker(msg.Expiration)
+				defer ticker.Stop()
+
+				<-ticker.C
+				m.ListenersLock.Lock()
+				delete(m.messages, msg.Id)
+				m.ListenersLock.Unlock()
+			}(&msg)
+		}
+
+		return msg.Id, nil
+	}
 }
 
 func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.Message, error) {
@@ -72,11 +77,15 @@ func (m *Module) Subscribe(ctx context.Context, subject string) (<-chan broker.M
 
 	select {
 	case <-ctx.Done():
-		return nil, broker.ErrExpiredID
+		return nil, broker.ErrInvalidID
 	default:
 		newChannel := make(chan broker.Message, 100)
+
 		m.ListenersLock.Lock()
-		m.subscribers[subject] = append(m.subscribers[subject], newChannel)
+		m.subscribers[subject] = model.Subject{
+			Subscribers: append(m.subscribers[subject].Subscribers, model.Subscriber{Channel: newChannel}),
+			Name:        subject,
+		}
 		m.ListenersLock.Unlock()
 
 		return newChannel, nil
@@ -88,11 +97,15 @@ func (m *Module) Fetch(ctx context.Context, subject string, id int) (broker.Mess
 		return broker.Message{}, broker.ErrUnavailable
 	}
 
-	for _, msg := range m.messages {
-		if msg.Id == id {
+	select {
+	case <-ctx.Done():
+		return broker.Message{}, broker.ErrInvalidID
+	default:
+		msg, ok := m.messages[id]
+		if ok {
 			return msg, nil
 		}
-	}
 
-	return broker.Message{}, broker.ErrExpiredID
+		return broker.Message{}, broker.ErrExpiredID
+	}
 }
