@@ -27,6 +27,8 @@ func (s *Server) Publish(globalContext context.Context, request *proto.PublishRe
 		Expiration: time.Duration(request.ExpirationSeconds) * time.Second,
 	}
 
+	log.Println(msg.Expiration)
+
 	publishId, err := s.BrokerInstance.Publish(globalContext, request.Subject, msg)
 
 	if err != nil {
@@ -37,10 +39,10 @@ func (s *Server) Publish(globalContext context.Context, request *proto.PublishRe
 	return &proto.PublishResponse{Id: int32(publishId)}, nil
 }
 
-func (s *Server) Subscribe(globalContext context.Context, request *proto.SubscribeRequest) error {
+func (s *Server) Subscribe(request *proto.SubscribeRequest, server proto.Broker_SubscribeServer) error {
 	fmt.Println("inside subscribe")
 
-	_, err := s.BrokerInstance.Subscribe(globalContext, request.Subject)
+	_, err := s.BrokerInstance.Subscribe(server.Context(), request.Subject)
 	if err != nil {
 		log.Println(err)
 		return err
