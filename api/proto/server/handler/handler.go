@@ -8,6 +8,8 @@ import (
 	"therealbroker/api/proto"
 	"therealbroker/pkg/broker"
 	"time"
+
+	"go.opentelemetry.io/otel"
 )
 
 type Server struct {
@@ -22,19 +24,27 @@ type Server struct {
 func (s *Server) Publish(globalContext context.Context, request *proto.PublishRequest) (*proto.PublishResponse, error) {
 	fmt.Println("inside publish")
 
+	globalContext, globalSpan := otel.Tracer("Server").Start(globalContext, "publish method")
+	publishStartTime := time.Now()
+
 	msg := broker.Message{
 		Body:       (string)(request.Body),
 		Expiration: time.Duration(request.ExpirationSeconds) * time.Second,
 	}
 
-	log.Println(msg.Expiration)
-
 	publishId, err := s.BrokerInstance.Publish(globalContext, request.Subject, msg)
+	publishDuration := time.Since(publishStartTime)
+	MethodDuration.WithLabelValues("publish_duration").Observe(float64(publishDuration) / float64(time.Nanosecond))
 
 	if err != nil {
-		log.Println(err)
+		MethodCount.WithLabelValues("publish", "failed").Inc()
+
 		return nil, err
 	}
+
+	MethodCount.WithLabelValues("publish", "successful").Inc()
+
+	globalSpan.End()
 
 	return &proto.PublishResponse{Id: int32(publishId)}, nil
 }

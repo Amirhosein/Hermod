@@ -16,6 +16,10 @@ var (
 	Port = 8080
 )
 
+func init() {
+	go handler.StartPrometheusServer()
+}
+
 func main() {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", Port))
 	if err != nil {
