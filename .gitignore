@@ -2,3 +2,4 @@ build/
 .idea/
 
 internal/broker/test.sh
+prometheus/data/
