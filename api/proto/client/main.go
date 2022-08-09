@@ -38,20 +38,38 @@ func main() {
 	// pushToSubject(client, ctx, subject, "some body for testing", int(10*time.Hour))
 
 	var wg sync.WaitGroup
-	ticker := time.NewTicker(500 * time.Millisecond)
 
+	ticker := time.NewTicker(1000 * time.Millisecond)
+	ticker2 := time.NewTicker(2000 * time.Millisecond)
 	doneIndicator := make(chan bool)
 
+	channel, _ := client.Subscribe(ctx, &proto.SubscribeRequest{
+		Subject: subject,
+	})
+
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
+
+		i := 0
+
 		for {
 			select {
 			case <-doneIndicator:
 				return
 			case <-ticker.C:
-				body := fmt.Sprintf("some text for testing : %v", time.Now())
+				i++
+				body := fmt.Sprintf("some text for testing %d : %v", i, time.Now())
+
 				go pushToSubject(client, ctx, subject, body, 3600)
+			case <-ticker2.C:
+				go func() {
+					msg, _ := channel.Recv()
+					if msg != nil {
+						log.Println("received message: ", (string)(msg.Body))
+					}
+				}()
 			}
 		}
 	}()
