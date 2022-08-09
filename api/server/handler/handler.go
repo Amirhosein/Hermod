@@ -8,6 +8,7 @@ import (
 	"sync"
 	"therealbroker/api/proto"
 	"therealbroker/pkg/broker"
+	"therealbroker/pkg/metric"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -16,10 +17,6 @@ import (
 type Server struct {
 	proto.UnimplementedBrokerServer
 	BrokerInstance broker.Broker
-
-	LastPublishLock *sync.Mutex
-	LastTopicLock   *sync.Mutex
-	LastPublishId   int
 }
 
 func (s *Server) Publish(globalContext context.Context, request *proto.PublishRequest) (*proto.PublishResponse, error) {
@@ -35,15 +32,15 @@ func (s *Server) Publish(globalContext context.Context, request *proto.PublishRe
 
 	publishId, err := s.BrokerInstance.Publish(globalContext, request.Subject, msg)
 	publishDuration := time.Since(publishStartTime)
-	MethodDuration.WithLabelValues("publish_duration").Observe(float64(publishDuration) / float64(time.Nanosecond))
+	metric.MethodDuration.WithLabelValues("publish_duration").Observe(float64(publishDuration) / float64(time.Nanosecond))
 
 	if err != nil {
-		MethodCount.WithLabelValues("publish", "failed").Inc()
+		metric.MethodCount.WithLabelValues("publish", "failed").Inc()
 
 		return nil, err
 	}
 
-	MethodCount.WithLabelValues("publish", "successful").Inc()
+	metric.MethodCount.WithLabelValues("publish", "successful").Inc()
 
 	globalSpan.End()
 
@@ -60,11 +57,11 @@ func (s *Server) Subscribe(request *proto.SubscribeRequest, server proto.Broker_
 	)
 
 	if err != nil {
-		MethodCount.WithLabelValues("subscribe", "failed").Inc()
+		metric.MethodCount.WithLabelValues("subscribe", "failed").Inc()
 		return err
 	}
 
-	ActiveSubscribersGauge.Inc()
+	metric.ActiveSubscribersGauge.Inc()
 
 	ctx := server.Context()
 
@@ -77,7 +74,7 @@ func (s *Server) Subscribe(request *proto.SubscribeRequest, server proto.Broker_
 			select {
 			case msg, ok := <-SubscribedChannel:
 				if !ok {
-					ActiveSubscribersGauge.Dec()
+					metric.ActiveSubscribersGauge.Dec()
 					wg.Done()
 
 					return
@@ -89,7 +86,7 @@ func (s *Server) Subscribe(request *proto.SubscribeRequest, server proto.Broker_
 			case <-ctx.Done():
 				subscribeError = errors.New("context timeout reached")
 
-				ActiveSubscribersGauge.Dec()
+				metric.ActiveSubscribersGauge.Dec()
 				wg.Done()
 
 				return
@@ -100,9 +97,9 @@ func (s *Server) Subscribe(request *proto.SubscribeRequest, server proto.Broker_
 	wg.Wait()
 
 	if subscribeError == nil {
-		MethodCount.WithLabelValues("subscribe", "successful").Inc()
+		metric.MethodCount.WithLabelValues("subscribe", "successful").Inc()
 	} else {
-		MethodCount.WithLabelValues("subscribe", "failed").Inc()
+		metric.MethodCount.WithLabelValues("subscribe", "failed").Inc()
 	}
 
 	return subscribeError
@@ -117,14 +114,14 @@ func (s *Server) Fetch(ctx context.Context, request *proto.FetchRequest) (*proto
 	msg, err := s.BrokerInstance.Fetch(ctx, request.Subject, int(request.Id))
 
 	if err != nil {
-		MethodCount.WithLabelValues("fetch", "failed").Inc()
+		metric.MethodCount.WithLabelValues("fetch", "failed").Inc()
 
 		return nil, err
 	}
 
 	fetchDuration := time.Since(fetchStartTime)
-	MethodDuration.WithLabelValues("fetch_duration").Observe(float64(fetchDuration) / float64(time.Nanosecond))
-	MethodCount.WithLabelValues("fetch", "successful").Inc()
+	metric.MethodDuration.WithLabelValues("fetch_duration").Observe(float64(fetchDuration) / float64(time.Nanosecond))
+	metric.MethodCount.WithLabelValues("fetch", "successful").Inc()
 
 	return &proto.MessageResponse{Body: []byte(msg.Body)}, nil
 }

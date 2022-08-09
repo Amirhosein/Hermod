@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"sync"
 	"therealbroker/api/proto"
-	"therealbroker/api/proto/server/handler"
+	"therealbroker/api/server/handler"
 	"therealbroker/internal/broker"
+	"therealbroker/pkg/metric"
 
 	"google.golang.org/grpc"
 )
@@ -17,7 +17,7 @@ var (
 )
 
 func init() {
-	go handler.StartPrometheusServer()
+	go metric.StartPrometheusServer()
 }
 
 func main() {
@@ -31,10 +31,7 @@ func main() {
 	proto.RegisterBrokerServer(
 		server,
 		&handler.Server{
-			BrokerInstance:  broker.NewModule(),
-			LastPublishLock: &sync.Mutex{},
-			LastTopicLock:   &sync.Mutex{},
-			LastPublishId:   0,
+			BrokerInstance: broker.NewModule(),
 		},
 	)
 

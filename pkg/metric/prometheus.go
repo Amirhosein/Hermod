@@ -1,4 +1,4 @@
-package handler
+package metric
 
 import (
 	"fmt"
