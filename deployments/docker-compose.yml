@@ -1,0 +1,28 @@
+version: '3'
+services:
+  broker:
+    build:
+      context: ../
+      dockerfile: build/package/Dockerfile
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=broker
+    ports:
+      - "8080:8080"
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=concurrent-http-server
+    volumes:
+      - ../db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    depends_on:
+      - web
+    networks:
+      - default

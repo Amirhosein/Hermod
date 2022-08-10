@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -16,11 +16,12 @@ var (
 	Port = 8080
 )
 
-func init() {
+func Init() {
 	go metric.StartPrometheusServer()
 }
 
-func main() {
+func Run() {
+	Init()
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", Port))
 	if err != nil {
 		log.Fatalf("Cant start listener: %v", err)

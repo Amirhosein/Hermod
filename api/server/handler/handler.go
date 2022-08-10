@@ -32,7 +32,7 @@ func (s *Server) Publish(globalContext context.Context, request *proto.PublishRe
 
 	publishId, err := s.BrokerInstance.Publish(globalContext, request.Subject, msg)
 	publishDuration := time.Since(publishStartTime)
-	metric.MethodDuration.WithLabelValues("publish_duration").Observe(float64(publishDuration) / float64(time.Nanosecond))
+	metric.MethodDuration.WithLabelValues("publish_duration").Observe(float64(publishDuration))
 
 	if err != nil {
 		metric.MethodCount.WithLabelValues("publish", "failed").Inc()
