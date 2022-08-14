@@ -22,6 +22,7 @@ func Init() {
 
 func Run() {
 	Init()
+
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", Port))
 	if err != nil {
 		log.Fatalf("Cant start listener: %v", err)

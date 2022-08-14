@@ -2,12 +2,13 @@ package broker
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"sync"
 	"testing"
 	"therealbroker/pkg/broker"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var (

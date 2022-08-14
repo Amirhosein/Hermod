@@ -49,6 +49,7 @@ func (s *Server) Publish(globalContext context.Context, request *proto.PublishRe
 
 func (s *Server) Subscribe(request *proto.SubscribeRequest, server proto.Broker_SubscribeServer) error {
 	fmt.Println("Subscriber request received.")
+
 	var subscribeError error
 
 	SubscribedChannel, err := s.BrokerInstance.Subscribe(

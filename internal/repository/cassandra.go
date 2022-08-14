@@ -125,6 +125,7 @@ func (db *CassandraDatabase) FetchMessage(id int) (broker.Message, error) {
 		Body:       body,
 		Expiration: time.Duration(expirationDate),
 	}
+
 	rows.Close()
 
 	return msg, nil
@@ -142,7 +143,6 @@ func (db *CassandraDatabase) batchHandler(ticker *time.Ticker) {
 		if len(db.deleteMessages) != 0 {
 			query := `DELETE FROM broker.messages WHERE id IN (` + strings.Join(db.deleteMessages, " , ") + ");"
 			db.deleteMessages = db.deleteMessages[:0]
-			log.Println(query)
 
 			err := db.client.Query(query).Exec()
 			if err != nil {

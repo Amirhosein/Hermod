@@ -75,6 +75,7 @@ func main() {
 	}()
 
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 		time.Sleep(20 * time.Minute)
