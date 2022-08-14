@@ -1,5 +1,5 @@
-build/
 .idea/
 
+db/
 internal/broker/test.sh
 prometheus/data/
