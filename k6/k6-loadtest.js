@@ -20,7 +20,7 @@ export const options = {
             startTime: '0s',
             exec: 'publish',
             vus: 10,
-            duration: '20m',
+            duration: '5m',
         }
     },
 };
