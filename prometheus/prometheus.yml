@@ -11,4 +11,12 @@ scrape_configs:
     metrics_path:  /metrics
     static_configs:
       - targets: ['localhost:8000']
+  
+  - job_name: postgres
+    static_configs:
+      - targets: ['localhost:9187']
+
+  - job_name: cassandra
+    static_configs:
+      - targets: ['localhost:9500']
 
