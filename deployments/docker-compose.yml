@@ -12,7 +12,12 @@ services:
       - DB_NAME=broker
     ports:
       - "8080:8080"
-  db:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - cassandra
+
+  postgres:
     image: postgres
     environment:
       - POSTGRES_USER=postgres
@@ -22,7 +27,28 @@ services:
       - ../db:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+
+  postgres_exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://postgres:postgres@postgres:5432/postgres?sslmode=disable
+    ports:
+      - "9187:9187"
     depends_on:
-      - web
+      - postgres
     networks:
       - default
+
+  cassandra:
+    image: cassandra
+    ports:
+      - "9042:9042"
+    volumes:
+      - ../db:/var/lib/cassandra
+
+  cassandra_exporter:
+    image: bitnami/cassandra-exporter
+    ports:
+      - "9500:9500"
+    depends_on:
+      - cassandra

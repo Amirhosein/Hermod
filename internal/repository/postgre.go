@@ -17,7 +17,7 @@ var postgresDB *PostgresDatabase
 var connectionError error
 
 const (
-	PG_HOST     = "localhost"
+	PG_HOST     = "postgres"
 	PG_PORT     = "5432"
 	PG_USER     = "postgres"
 	PG_PASSWORD = "postgres"
@@ -139,6 +139,7 @@ func (db *PostgresDatabase) batchHandler(ticker *time.Ticker) {
 }
 
 func GetPostgre() (Database, error) {
+	time.Sleep(5 * time.Second)
 	var once sync.Once
 
 	once.Do(func() {

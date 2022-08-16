@@ -19,7 +19,7 @@ var (
 )
 
 const (
-	CASS_HOST     = "localhost"
+	CASS_HOST     = "cassandra"
 	CASS_PORT     = "9042"
 	CASS_USER     = "cassandra"
 	CASS_PASSWORD = "cassandra"
@@ -154,6 +154,7 @@ func (db *CassandraDatabase) batchHandler(ticker *time.Ticker) {
 }
 
 func GetCassandra() (Database, error) {
+	time.Sleep(30 * time.Second)
 	var once sync.Once
 
 	once.Do(func() {
