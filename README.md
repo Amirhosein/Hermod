@@ -14,7 +14,7 @@ interface. There are unit tests to specify requirements and also validate your i
   - Env metrics:
     - Metrics for your application memory, cpu load, cpu utilization, GCs
 - [x] Implement gRPC API for the broker and main functionalities
-- [ ] Create *dockerfile* and *docker-compose* files for your deployment
+- [x] Create *dockerfile* and *docker-compose* files for your deployment
 - [ ] Deploy your app with the previous `docker-compose` on a remote machine
 - [ ] Deploy your app on K8
 
