@@ -12,6 +12,11 @@ const newPublishMessage = (subject, body, expirationSeconds) => ({
     expirationSeconds
 });
 
+
+const newFetchMessage = (id) => ({
+    id
+});
+
 export const options = {
     discardResponseBodies: true,
     scenarios: {
@@ -30,14 +35,27 @@ export function publish() {
         plaintext: true,
     });
 
+    let request
+    let response
     for (let i=0; i<100; i++) {
-        let request = newPublishMessage("sub", generateRandomString(), 100);
-        const response = client.invoke('broker.Broker/Publish', request);
+        request = newPublishMessage("sub", generateRandomString(), 100);
+        response = client.invoke('broker.Broker/Publish', request);
         check(response, {
             'response exist': res => res !== null,
             'response status is ok': res => res.status !== grpc.StatusOk,
         })
     }
+    fetch(response.message.id)
+    client.close();
+}
+
+export function fetch(id) {
+    let request = newFetchMessage(id);
+    const response = client.invoke('broker.Broker/Fetch', request);
+    check(response, {
+        'response exist': res => res !== null,
+        'response status is ok': res => res.status !== grpc.StatusOk,
+    })
 
     client.close();
 }
