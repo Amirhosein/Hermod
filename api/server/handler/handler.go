@@ -20,8 +20,6 @@ type Server struct {
 }
 
 func (s *Server) Publish(globalContext context.Context, request *proto.PublishRequest) (*proto.PublishResponse, error) {
-	fmt.Println("inside publish")
-
 	globalContext, globalSpan := otel.Tracer("Server").Start(globalContext, "publish method")
 	publishStartTime := time.Now()
 
@@ -30,7 +28,10 @@ func (s *Server) Publish(globalContext context.Context, request *proto.PublishRe
 		Expiration: time.Duration(request.ExpirationSeconds) * time.Second,
 	}
 
+	_, pubSpan := otel.Tracer("Server").Start(globalContext, "Module.Publish")
 	publishId, err := s.BrokerInstance.Publish(globalContext, request.Subject, msg)
+	pubSpan.End()
+
 	publishDuration := time.Since(publishStartTime)
 	metric.MethodDuration.WithLabelValues("publish_duration").Observe(float64(publishDuration))
 
@@ -112,7 +113,9 @@ func (s *Server) Fetch(ctx context.Context, request *proto.FetchRequest) (*proto
 	log.Println("Getting fetch request")
 	defer log.Println("Finish handling fetch request")
 
+	_, moduleFetch := otel.Tracer("Server").Start(ctx, "Get or create topics by name")
 	msg, err := s.BrokerInstance.Fetch(ctx, request.Subject, int(request.Id))
+	moduleFetch.End()
 
 	if err != nil {
 		metric.MethodCount.WithLabelValues("fetch", "failed").Inc()

@@ -7,6 +7,7 @@ import (
 	"therealbroker/api/proto"
 	"therealbroker/api/server/handler"
 	"therealbroker/internal/broker"
+	"therealbroker/internal/telemetry"
 	"therealbroker/pkg/metric"
 
 	"google.golang.org/grpc"
@@ -18,6 +19,7 @@ var (
 
 func Init() {
 	go metric.StartPrometheusServer()
+	telemetry.Register()
 }
 
 func Run() {
