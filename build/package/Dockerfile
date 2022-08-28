@@ -23,7 +23,15 @@ COPY . .
 WORKDIR /app
 RUN go build -o /Broker
 
+FROM alpine:latest
+
+WORKDIR /app/
+
+COPY --from=builder /Broker .
+
 EXPOSE 8080
+
+ENTRYPOINT ["./Broker"]
 
 # Run server
 CMD ["/Broker"]
