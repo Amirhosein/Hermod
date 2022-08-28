@@ -1,6 +1,7 @@
 version: '3'
 services:
   broker:
+    image: amirgames47/broker:latest
     build:
       context: ../
       dockerfile: build/package/Dockerfile
