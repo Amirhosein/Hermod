@@ -17,6 +17,13 @@ spec:
       containers:
         - name: {{ template "hermod.fullname" . }}-broker-broker
           image: amirgames47/broker:latest
+          resources:
+            requests:
+              memory: "2048Mi"
+              cpu: "500m"
+            limits:
+              memory: "4096Mi"
+              cpu: "500m"
           ports:
             - name: prometheus
               containerPort: 8000
@@ -35,12 +42,12 @@ spec:
   ports:
     - name: prometheus
       port: 8000
-      nodePort: 30002
+      nodePort: 31234
       targetPort: 8000
       protocol: TCP
     - name: grpc
       port: 8080
-      nodePort: 30001
+      nodePort: 31235
       targetPort: 8080
       protocol: TCP
   selector:
