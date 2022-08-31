@@ -18,10 +18,16 @@ spec:
         io.kompose.service: cassandra
     spec:
       containers:
-        - image: cassandra
+        - image: dockerproxy.bale.ai/cassandra
           name: cassandra
           ports:
             - containerPort: 9042
-          resources: {}
+          resources:
+            requests:
+              memory: "8Gi"
+              cpu: "7"
+            limits:
+              memory: "9Gi"
+              cpu: "8"
       restartPolicy: Always
 status: {}

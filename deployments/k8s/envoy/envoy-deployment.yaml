@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+        name: envoy
+spec:
+        replicas: 1
+        selector:
+                matchLabels:
+                        app: envoy
+        template:
+                metadata:
+                        labels:
+                                app: envoy
+                spec:
+                        containers:
+                        - name: envoy
+                          image: dockerproxy.bale.ai/envoyproxy/envoy-alpine:v1.16.0
+                          ports:
+                          - name: https
+                            containerPort: 10000
+                          resources:
+                            requests:
+                              memory: "2Gi"
+                              cpu: "2"
+                            limits:
+                              memory: "3Gi"
+                              cpu: "3"
+                        volumes:
+                        - name: config
+                          configMap:
+                                name: envoy-conf

@@ -31,11 +31,11 @@ spec:
             - containerPort: 5432
           resources:
             requests:
+              memory: "3Gi"
+              cpu: "1"
+            limits:
               memory: "4Gi"
               cpu: "2"
-            limits:
-              memory: "5Gi"
-              cpu: "3"
 
     
       restartPolicy: Always
