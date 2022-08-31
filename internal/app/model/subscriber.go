@@ -1,6 +1,6 @@
 package model
 
-import "therealbroker/pkg/broker"
+import "therealbroker/internal/pkg/broker"
 
 type Subscriber struct {
 	Channel chan broker.Message

@@ -1,6 +1,6 @@
 package repository
 
-import "therealbroker/pkg/broker"
+import "therealbroker/internal/pkg/broker"
 
 type Database interface {
 	SaveMessage(msg broker.Message, subject string) int

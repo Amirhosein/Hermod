@@ -3,9 +3,9 @@ package broker
 import (
 	"context"
 	"sync"
-	"therealbroker/internal/model"
-	"therealbroker/internal/repository"
-	"therealbroker/pkg/broker"
+	"therealbroker/internal/app/model"
+	"therealbroker/internal/app/repository"
+	"therealbroker/internal/pkg/broker"
 	"time"
 
 	"go.opentelemetry.io/otel"

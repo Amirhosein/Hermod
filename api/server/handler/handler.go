@@ -7,8 +7,8 @@ import (
 	"log"
 	"sync"
 	"therealbroker/api/proto"
-	"therealbroker/pkg/broker"
-	"therealbroker/pkg/metric"
+	"therealbroker/internal/pkg/broker"
+	"therealbroker/internal/pkg/metric"
 	"time"
 
 	"go.opentelemetry.io/otel"

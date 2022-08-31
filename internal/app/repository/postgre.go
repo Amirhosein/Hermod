@@ -4,12 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
+	"github.com/go-redis/redis"
 	_ "github.com/lib/pq"
 
 	"sync"
-	"therealbroker/pkg/broker"
+	"therealbroker/internal/pkg/broker"
 	"time"
 )
 
@@ -22,12 +24,19 @@ const (
 	PG_USER     = "postgres"
 	PG_PASSWORD = "postgres"
 	PG_NAME     = "broker"
+
+	REDIS_HOST     = "redis"
+	REDIS_PORT     = "6379"
+	REDIS_PASSWORD = ""
 )
 
 type PostgresDatabase struct {
 	sync.Mutex
 	client         *sql.DB
+	rClient        *redis.Client
 	deleteMessages []string
+	insertMessages []broker.Message
+	lastID         int
 }
 
 func (db *PostgresDatabase) createTable() error {
@@ -60,21 +69,32 @@ func (db *PostgresDatabase) createIndex() error {
 }
 
 func (db *PostgresDatabase) SaveMessage(msg broker.Message, subject string) int {
-	query := fmt.Sprintf(`INSERT INTO messages(id, subject, body, expiration_date) VALUES (DEFAULT, '%s', '%s', %v) RETURNING id;`, subject, msg.Body, int64(msg.Expiration))
+	// query := fmt.Sprintf(`INSERT INTO messages(id, subject, body, expiration_date) VALUES (DEFAULT, '%s', '%s', %v) RETURNING id;`, subject, msg.Body, int64(msg.Expiration))
 
-	var insertedID int
+	db.lastID++
+	msg.Id = db.lastID
 
-	row, err := db.client.Query(query)
-	if err != nil {
-		fmt.Println("saving error:", err)
-		return -1
+	db.Lock()
+	db.insertMessages = append(db.insertMessages, msg)
+	db.Unlock()
+
+	if len(db.insertMessages) > 10000 {
+		db.batchInsert()
 	}
 
-	row.Next()
-	_ = row.Scan(&insertedID)
-	row.Close()
+	// var insertedID int
 
-	return insertedID
+	// row, err := db.client.Query(query)
+	// if err != nil {
+	// 	fmt.Println("saving error:", err)
+	// 	return -1
+	// }
+
+	// row.Next()
+	// _ = row.Scan(&insertedID)
+	// row.Close()
+
+	return msg.Id
 }
 
 func (db *PostgresDatabase) FetchMessage(id int) (broker.Message, error) {
@@ -135,6 +155,28 @@ func (db *PostgresDatabase) batchHandler(ticker *time.Ticker) {
 			}
 		}
 		db.Unlock()
+
+		db.batchInsert()
+	}
+}
+
+func (db *PostgresDatabase) batchInsert() {
+	if len(db.insertMessages) != 0 {
+		query := `INSERT INTO messages(id, subject, body, expiration_date) VALUES `
+		for _, msg := range db.insertMessages {
+			query += fmt.Sprintf("(%d, '%s', '%s', %v),", msg.Id, "msg.Subject", msg.Body, int64(msg.Expiration))
+			log.Println(msg.Id)
+		}
+		query = query[:len(query)-1] + ";"
+		db.insertMessages = db.insertMessages[:0]
+
+		db.rClient.Set("lastID", db.lastID, 0)
+		log.Println("lastID:", db.lastID)
+
+		_, err := db.client.Exec(query)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 
@@ -183,7 +225,30 @@ func GetPostgre() (Database, error) {
 			return
 		}
 
-		ticker := time.NewTicker(1 * time.Second)
+		rClient := redis.NewClient(&redis.Options{
+			Addr:     REDIS_HOST + ":" + REDIS_PORT,
+			Password: REDIS_PASSWORD,
+		})
+
+		_, err = rClient.Ping().Result()
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			log.Println("redis connected")
+		}
+
+		postgresDB.rClient = rClient
+
+		result, err := postgresDB.rClient.Get("lastID").Result()
+		if err == redis.Nil {
+			postgresDB.lastID = 600000
+		} else if err != nil {
+			log.Fatal(err)
+		} else {
+			postgresDB.lastID, _ = strconv.Atoi(result)
+		}
+
+		ticker := time.NewTicker(100 * time.Millisecond)
 
 		go postgresDB.batchHandler(ticker)
 	})

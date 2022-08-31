@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"sync"
 	"testing"
-	"therealbroker/pkg/broker"
+	"therealbroker/internal/pkg/broker"
 	"time"
 
 	"github.com/stretchr/testify/assert"

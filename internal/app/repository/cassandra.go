@@ -10,7 +10,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"sync"
-	"therealbroker/pkg/broker"
+	"therealbroker/internal/pkg/broker"
 	"time"
 )
 
@@ -26,11 +26,93 @@ const (
 	CASS_NAME     = "broker"
 )
 
+type BatchDaemon struct {
+	batch          *gocql.Batch
+	counter        int
+	tickerDuration time.Duration
+	ticker         *time.Ticker
+	innerMutex     *sync.Mutex
+}
+
 type CassandraDatabase struct {
 	sync.Mutex
 	client         *gocql.Session
 	deleteMessages []string
+	insertMessages []broker.Message
 	lastID         int64
+	bd             *BatchDaemon
+}
+
+const MAX_BATCH_SIZE = 100
+
+func (db *CassandraDatabase) NewBatchDaemon() *BatchDaemon {
+	ans := &BatchDaemon{
+		batch:          db.client.NewBatch(gocql.LoggedBatch),
+		counter:        0,
+		tickerDuration: time.Millisecond * 100,
+		innerMutex:     &sync.Mutex{},
+	}
+	ans.ticker = time.NewTicker(ans.tickerDuration)
+	db.TimeExecuter()
+	return ans
+}
+
+func (db *CassandraDatabase) TimeExecuter() func() {
+	done := make(chan int)
+	go func() {
+		for {
+			select {
+
+			case <-done:
+				return
+			case <-db.bd.ticker.C:
+				db.bd.innerMutex.Lock()
+				if db.bd.counter > 0 {
+					db.Execute()
+				}
+				db.bd.innerMutex.Unlock()
+
+			}
+		}
+	}()
+	cancel := func() {
+		db.bd.ticker.Stop()
+		close(done)
+	}
+	return cancel
+}
+
+func (db *CassandraDatabase) AddQuery(stmt string, args ...interface{}) {
+	db.bd.innerMutex.Lock()
+	defer db.bd.innerMutex.Unlock()
+
+	if db.bd.counter > MAX_BATCH_SIZE {
+		db.Execute()
+	}
+
+	db.bd.batch.Query(stmt, args...)
+	db.bd.counter++
+
+	return
+}
+
+func (db *CassandraDatabase) Execute() {
+	fmt.Println(db.bd.counter)
+	if db.bd.counter == 0 {
+		return
+	}
+
+	err := db.client.ExecuteBatch(db.bd.batch)
+
+	if err != nil {
+		fmt.Println(db.bd.counter)
+		log.Fatalf("error on batch execution: %v\n", err)
+	}
+
+	db.bd.ticker.Reset(db.bd.tickerDuration)
+	db.bd.batch = db.client.NewBatch(gocql.LoggedBatch)
+	db.bd.counter = 0
+
 }
 
 func (db *CassandraDatabase) createTable() error {
@@ -79,21 +161,34 @@ func (db *CassandraDatabase) createTable() error {
 func (db *CassandraDatabase) SaveMessage(msg broker.Message, subject string) int {
 	db.lastID++
 
-	query := fmt.Sprintf(`INSERT INTO broker.messages (id, subject, body, expiration_date) VALUES (%d, '%s', '%s', %v);`, db.lastID, subject, msg.Body, int64(msg.Expiration))
+	query := `INSERT INTO broker.messages (id, subject, body, expiration_date) VALUES (?, ?, ?, ?)`
 
-	err := db.client.Query(query).Exec()
-	if err != nil {
-		fmt.Println("saving error:", err)
-		return -1
-	}
+	msg.Id = int(db.lastID)
+	db.AddQuery(query, msg.Id, subject, msg.Body, msg.Expiration)
 
-	query = fmt.Sprintf(`UPDATE broker.ids SET next_id=%d WHERE id_name='messages_id';`, db.lastID)
+	// 111
+	// db.Lock()
+	// db.insertMessages = append(db.insertMessages, msg)
+	// db.Unlock()
 
-	err = db.client.Query(query).Exec()
-	if err != nil {
-		fmt.Println("saving error:", err)
-		return -1
-	}
+	// if len(db.insertMessages) == 10000 {
+	// 	db.batchInsert(subject)
+	// }
+	// 222
+
+	// err := db.client.Query(query).Exec()
+	// if err != nil {
+	// 	fmt.Println("saving error:", err)
+	// 	return -1
+	// }
+
+	// query = fmt.Sprintf(`UPDATE broker.ids SET next_id=%d WHERE id_name='messages_id';`, db.lastID)
+
+	// err = db.client.Query(query).Exec()
+	// if err != nil {
+	// 	fmt.Println("saving error:", err)
+	// 	return -1
+	// }
 
 	return int(db.lastID)
 }
@@ -150,6 +245,21 @@ func (db *CassandraDatabase) batchHandler(ticker *time.Ticker) {
 			}
 		}
 		db.Unlock()
+
+		// db.batchInsert("")
+	}
+}
+
+func (db *CassandraDatabase) batchInsert(subject string) {
+	query := `INSERT INTO broker.messages (id, subject, body, expiration_date) VALUES `
+	for _, msg := range db.insertMessages {
+		query += fmt.Sprintf("(%d, '%s', '%s', %v), ", msg.Id, subject, msg.Body, msg.Expiration)
+	}
+	query = query[:len(query)-2] + ";"
+	db.insertMessages = db.insertMessages[:0]
+	err := db.client.Query(query).Exec()
+	if err != nil {
+		fmt.Println(err)
 	}
 }
 
@@ -191,8 +301,9 @@ func GetCassandra() (Database, error) {
 		// if err != nil {
 		// log.Fatal(err)
 		// }
+		cassandraDB.bd = cassandraDB.NewBatchDaemon()
 
-		ticker := time.NewTicker(1 * time.Second)
+		ticker := time.NewTicker(100 * time.Millisecond)
 
 		go cassandraDB.batchHandler(ticker)
 	})

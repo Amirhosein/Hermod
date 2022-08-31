@@ -6,9 +6,9 @@ import (
 	"net"
 	"therealbroker/api/proto"
 	"therealbroker/api/server/handler"
-	"therealbroker/internal/broker"
-	"therealbroker/internal/telemetry"
-	"therealbroker/pkg/metric"
+	"therealbroker/internal/app/broker"
+	"therealbroker/internal/pkg/metric"
+	"therealbroker/internal/pkg/telemetry"
 
 	"google.golang.org/grpc"
 )
