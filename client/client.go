@@ -1,101 +1,109 @@
 package main
 
+//A simple client to test the server
+
 import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
+	"os"
 	"sync"
+	pb "therealbroker/api/proto"
 	"time"
-
-	"therealbroker/api/proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var (
-	Port    = 8080
-	subject = "test"
-)
+func randomString(n int) string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyz")
 
-func main() {
-	connection, err := grpc.Dial(fmt.Sprintf("localhost:%d", Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
-
-	if err != nil {
-		log.Fatalf("can't connect to server: %v", err)
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
 	}
 
-	defer func(clientConn *grpc.ClientConn) {
-		err := clientConn.Close()
-		if err != nil {
-			log.Fatalf("can't close server connection: %v", err)
-		}
-	}(connection)
-
-	client := proto.NewBrokerClient(connection)
-	ctx := context.Background()
-
-	// pushToSubject(client, ctx, subject, "some body for testing", int(10*time.Hour))
-
-	var wg sync.WaitGroup
-
-	ticker := time.NewTicker(1000 * time.Millisecond)
-	ticker2 := time.NewTicker(2000 * time.Millisecond)
-	doneIndicator := make(chan bool)
-
-	channel, _ := client.Subscribe(ctx, &proto.SubscribeRequest{
-		Subject: subject,
-	})
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-
-		i := 0
-
-		for {
-			select {
-			case <-doneIndicator:
-				return
-			case <-ticker.C:
-				i++
-				body := fmt.Sprintf("some text for testing %d : %v", i, time.Now())
-
-				go pushToSubject(client, ctx, subject, body, 3600)
-			case <-ticker2.C:
-				go func() {
-					msg, _ := channel.Recv()
-					if msg != nil {
-						log.Println("received message: ", (string)(msg.Body))
-					}
-				}()
-			}
-		}
-	}()
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-		time.Sleep(20 * time.Minute)
-		ticker.Stop()
-		doneIndicator <- true
-	}()
-	wg.Wait()
+	return string(b)
 }
 
-func pushToSubject(client proto.BrokerClient, ctx context.Context, subject string, body string, expire int) {
-	response, err := client.Publish(ctx, &proto.PublishRequest{
-		Subject:           subject,
-		Body:              []byte(body),
-		ExpirationSeconds: int32(expire),
-	})
+var concurrent bool
 
+// var ids = make(chan int32, 5)
+// var duration = time.Hour
+
+var err error
+
+func singlePublish(client pb.BrokerClient, subject string) {
+	_, err = client.Publish(context.Background(), &pb.PublishRequest{
+		Subject:           subject,
+		Body:              []byte(randomString(16)),
+		ExpirationSeconds: int32(0)})
 	if err != nil {
-		log.Printf("publish to subject failed: %s\n", err)
-		return
+		log.Fatalf("Error ocurred on publish: 21%v", err)
+	}
+}
+
+var stime time.Time
+var client pb.BrokerClient
+var wg sync.WaitGroup
+var count int
+
+func Publish() {
+	count = 0
+	target := func() {
+		defer wg.Done()
+		count++
+
+		singlePublish(client, "ali")
 	}
 
-	log.Println("response Id: ", response.Id)
+	stime = time.Now()
+
+	for {
+		if count > 50000 {
+			wg.Wait()
+			fmt.Printf("Pub count: %d, in %v time\n", count, time.Since(stime))
+			count = 0
+			stime = time.Now()
+		}
+
+		wg.Add(1)
+
+		if concurrent {
+			go target()
+		} else {
+			target()
+		}
+	}
+}
+
+var conn *grpc.ClientConn
+var url string
+
+func newClient() (pb.BrokerClient, func()) {
+	var err error
+
+	// url := "envoy:8000"
+	// url := "localhost:50051"
+	// url := "192.168.70.194:31235"
+	conn, err = grpc.Dial(url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return newClient()
+	}
+
+	cancel := func() {
+		conn.Close()
+	}
+
+	return pb.NewBrokerClient(conn), cancel
+}
+
+func main() {
+	concurrent = os.Args[1] == "conc"
+	url = os.Args[2]
+
+	client, _ = newClient()
+
+	Publish()
 }
