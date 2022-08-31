@@ -15,8 +15,8 @@ interface. There are unit tests to specify requirements and also validate your i
     - Metrics for your application memory, cpu load, cpu utilization, GCs
 - [x] Implement gRPC API for the broker and main functionalities
 - [x] Create *dockerfile* and *docker-compose* files for your deployment
-- [ ] Deploy your app with the previous `docker-compose` on a remote machine
-- [ ] Deploy your app on K8
+- [x] Deploy your app with the previous `docker-compose` on a remote machine
+- [x] Deploy your app on K8
 
 # Phase 2 Evaluation
 We run our gRPC client that implemented the `broker.proto` against your deployed broker application.
