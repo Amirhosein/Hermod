@@ -2,4 +2,4 @@
 
 db/
 internal/broker/test.sh
-prometheus/data/
+config/prometheus/data
