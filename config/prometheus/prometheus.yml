@@ -10,7 +10,7 @@ scrape_configs:
   - job_name: broker
     metrics_path:  /metrics
     static_configs:
-      - targets: ['localhost:8000']
+      - targets: ['192.168.70.193:32342']
   
   - job_name: postgres
     static_configs:
