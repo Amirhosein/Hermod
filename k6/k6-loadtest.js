@@ -31,7 +31,7 @@ export const options = {
 };
 
 export function publish() {
-    client.connect('192.168.70.193:31235', {
+    client.connect('127.0.0.1:8080', {
         plaintext: true,
     });
 
