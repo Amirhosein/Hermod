@@ -38,7 +38,6 @@ type CassandraDatabase struct {
 	sync.Mutex
 	client         *gocql.Session
 	deleteMessages []string
-	insertMessages []broker.Message
 	lastID         int64
 	bd             *BatchDaemon
 }
@@ -53,16 +52,18 @@ func (db *CassandraDatabase) NewBatchDaemon() *BatchDaemon {
 		innerMutex:     &sync.Mutex{},
 	}
 	ans.ticker = time.NewTicker(ans.tickerDuration)
+
 	db.TimeExecuter()
+
 	return ans
 }
 
 func (db *CassandraDatabase) TimeExecuter() func() {
 	done := make(chan int)
+
 	go func() {
 		for {
 			select {
-
 			case <-done:
 				return
 			case <-db.bd.ticker.C:
@@ -71,14 +72,15 @@ func (db *CassandraDatabase) TimeExecuter() func() {
 					db.Execute()
 				}
 				db.bd.innerMutex.Unlock()
-
 			}
 		}
 	}()
+
 	cancel := func() {
 		db.bd.ticker.Stop()
 		close(done)
 	}
+
 	return cancel
 }
 
@@ -92,12 +94,11 @@ func (db *CassandraDatabase) AddQuery(stmt string, args ...interface{}) {
 
 	db.bd.batch.Query(stmt, args...)
 	db.bd.counter++
-
-	return
 }
 
 func (db *CassandraDatabase) Execute() {
 	fmt.Println(db.bd.counter)
+
 	if db.bd.counter == 0 {
 		return
 	}
@@ -112,7 +113,6 @@ func (db *CassandraDatabase) Execute() {
 	db.bd.ticker.Reset(db.bd.tickerDuration)
 	db.bd.batch = db.client.NewBatch(gocql.LoggedBatch)
 	db.bd.counter = 0
-
 }
 
 func (db *CassandraDatabase) createTable() error {
@@ -124,6 +124,7 @@ func (db *CassandraDatabase) createTable() error {
 	}
 
 	var exists string
+
 	_ = db.client.Query(`SELECT table_name FROM system_schema.tables WHERE keyspace_name='broker';`).Iter().Scan(&exists)
 
 	err = db.client.Query(`CREATE TABLE IF NOT EXISTS broker.ids (id_name varchar, next_id int, PRIMARY KEY (id_name));`).Exec()
@@ -245,21 +246,6 @@ func (db *CassandraDatabase) batchHandler(ticker *time.Ticker) {
 			}
 		}
 		db.Unlock()
-
-		// db.batchInsert("")
-	}
-}
-
-func (db *CassandraDatabase) batchInsert(subject string) {
-	query := `INSERT INTO broker.messages (id, subject, body, expiration_date) VALUES `
-	for _, msg := range db.insertMessages {
-		query += fmt.Sprintf("(%d, '%s', '%s', %v), ", msg.Id, subject, msg.Body, msg.Expiration)
-	}
-	query = query[:len(query)-2] + ";"
-	db.insertMessages = db.insertMessages[:0]
-	err := db.client.Query(query).Exec()
-	if err != nil {
-		fmt.Println(err)
 	}
 }
 

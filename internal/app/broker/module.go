@@ -20,8 +20,8 @@ type Module struct {
 }
 
 func NewModule() broker.Broker {
-	db, err := repository.GetPostgre()
-	// db, err := repository.GetCassandra()
+	// db, err := repository.GetPostgre()
+	db, err := repository.GetCassandra()
 	if err != nil {
 		panic(err)
 	}

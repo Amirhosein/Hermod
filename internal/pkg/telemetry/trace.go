@@ -26,6 +26,7 @@ func newResource(name string) *resource.Resource {
 			// attribute.String("environment", "demo"),
 		),
 	)
+
 	return r
 }
 func newTraceProvider(exporter trace.SpanExporter) (*trace.TracerProvider, error) {
