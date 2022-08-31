@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: broker
+  name: broker
+spec:
+  type: NodePort
+  ports:
+    - name: "8080"
+      nodePort: 32341
+      port: 8080
+      targetPort: 8080
+    - name: "8000"
+      nodePort: 32342
+      port: 8000
+      targetPort: 8000
+  selector:
+    io.kompose.service: broker
+status:
+  loadBalancer: {}
