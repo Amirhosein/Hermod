@@ -1,0 +1,26 @@
+apiVersion: k6.io/v1alpha1
+kind: K6
+metadata:
+  name: k6-sample
+spec:
+  runner:
+    resources:
+      requests:
+        memory: "200Mi"
+        cpu: "2000m"
+      limits:
+        memory: "400Mi"
+        cpu: "2048m"
+  starter:
+    resources:
+      requests:
+        memory: "200Mi"
+        cpu: "2000m"
+      limits:
+        memory: "400Mi"
+        cpu: "2048m"
+  parallelism: 4
+  script:
+    configMap:
+      name: crocodile-stress-test
+      file: k6-loadtest.js
