@@ -3,3 +3,5 @@
 db/
 internal/broker/test.sh
 config/prometheus/data
+
+.DS_Store
