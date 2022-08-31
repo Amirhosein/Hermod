@@ -20,10 +20,10 @@ spec:
           resources:
             requests:
               memory: "2048Mi"
-              cpu: "500m"
+              cpu: "3"
             limits:
               memory: "4096Mi"
-              cpu: "500m"
+              cpu: "4"
           ports:
             - name: prometheus
               containerPort: 8000
@@ -42,12 +42,12 @@ spec:
   ports:
     - name: prometheus
       port: 8000
-      nodePort: 31234
+      nodePort: 32341
       targetPort: 8000
       protocol: TCP
     - name: grpc
       port: 8080
-      nodePort: 31235
+      nodePort: 32342
       targetPort: 8080
       protocol: TCP
   selector:
