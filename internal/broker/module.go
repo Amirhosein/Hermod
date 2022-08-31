@@ -7,6 +7,8 @@ import (
 	"therealbroker/internal/repository"
 	"therealbroker/pkg/broker"
 	"time"
+
+	"go.opentelemetry.io/otel"
 )
 
 type Module struct {
@@ -18,8 +20,8 @@ type Module struct {
 }
 
 func NewModule() broker.Broker {
-	// db, err := repository.GetPostgre()
-	db, err := repository.GetCassandra()
+	db, err := repository.GetPostgre()
+	// db, err := repository.GetCassandra()
 	if err != nil {
 		panic(err)
 	}
@@ -51,18 +53,22 @@ func (m *Module) Publish(ctx context.Context, subject string, msg broker.Message
 	case <-ctx.Done():
 		return -1, ctx.Err()
 	default:
+		_, subSpan := otel.Tracer("Server").Start(ctx, "Module.putChannel")
 		for _, listener := range m.subscribers[subject].Subscribers {
 			if cap(listener.Channel) != len(listener.Channel) {
 				listener.Channel <- msg
 			}
 		}
+		subSpan.End()
 
+		_, saveSpan := otel.Tracer("Server").Start(ctx, "Module.saveDB")
 		msg.Id = m.db.SaveMessage(msg, subject)
 		// msg.Id = len(m.messages)
 
 		// m.ListenersLock.Lock()
 		// m.messages[msg.Id] = msg
 		// m.ListenersLock.Unlock()
+		saveSpan.End()
 
 		if msg.Expiration != 0 {
 			go func(msg *broker.Message) {
