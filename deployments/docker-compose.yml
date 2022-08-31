@@ -2,6 +2,7 @@ version: '3'
 services:
   broker:
     image: amirgames47/broker:latest
+    platform: linux/amd64
     build:
       context: ../
       dockerfile: build/package/Dockerfile
@@ -47,9 +48,14 @@ services:
     volumes:
       - ../db:/var/lib/cassandra
 
-  cassandra_exporter:
-    image: bitnami/cassandra-exporter
+  jaeger:
+    image: jaegertracing/all-in-one:latest
     ports:
-      - "9500:9500"
-    depends_on:
-      - cassandra
+      - "6831:6831/udp"
+      - "16686:16686"
+      - "14268:14268"
+
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
