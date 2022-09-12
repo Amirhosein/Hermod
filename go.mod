@@ -7,7 +7,7 @@ require (
 	github.com/gocql/gocql v1.2.0
 	github.com/lib/pq v1.10.6
 	github.com/prometheus/client_golang v1.13.0
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/otel v1.9.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.9.0
 	go.opentelemetry.io/otel/sdk v1.9.0
