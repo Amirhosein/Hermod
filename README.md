@@ -1,25 +1,67 @@
-# Welcome project for newcomers!
+# Hermod: Mythic, Mighty, Simple Message Broker 
 
-# Introduction
-In this project you have to implement a message broker, based on `broker.Broker`
-interface. There are unit tests to specify requirements and also validate your implementation.
+Hermod is a fast and simple GRPC based broker. It's a mini practical project to sail through the Golang and most common used tools and frameworks including:
 
-# Roadmap
-- [x] Implement `broker.Broker` interface and pass all tests
-- [x] Add basic logs and prometheus metrics
-  - Metrics for each RPCs:
-    - `method_count` to show count of failed/successful RPC calls
-    - `method_duration` for latency of each call, in 99, 95, 50 quantiles
-    - `active_subscribers` to display total active subscriptions
-  - Env metrics:
-    - Metrics for your application memory, cpu load, cpu utilization, GCs
-- [x] Implement gRPC API for the broker and main functionalities
-- [x] Create *dockerfile* and *docker-compose* files for your deployment
-- [x] Deploy your app with the previous `docker-compose` on a remote machine
-- [x] Deploy your app on K8
+- GRPC/Protobuf
+- Concurrent programming
+- Storing data using Cassandra/Postrgres/Redis
+- Load Testing using K6 and simple golang client
+- Unit Testing
+- Monitoring using Prometheus and Grafana
+- Tracing using Jaeger
+- Rate Limiting using envoy
+- Caching and batching for highly better performance
+- Deploying using docker and kubernetes
+- Creating helm chart for easy deployment
 
-# Phase 2 Evaluation
-We run our gRPC client that implemented the `broker.proto` against your deployed broker application.
+<p align="center">
+  <a href="https://skillicons.dev">
+    <img src="https://skillicons.dev/icons?i=go,prometheus,grafana,postgres,cassandra,redis,kubernetes,docker" />
+  </a>
+</p>
 
-As it should function properly ( like the unit tests ), we expect the provided metrics to display a good observation, and if
-anything unexpected happened, you could diagnose your app, using the logs and other tools.
+# Structure
+![overall architecture](https://s24.picofile.com/file/8453067350/Screenshot_2022_09_12_122319.png)
+For better understanding the core and logical concept of Hermod, i've created a simple prezi presentation. You can find it [here](https://prezi.com/view/qqAU2Fd7MCXcTl3sJXxv/). Make sure to check it out!
+
+## RPCs Description
+- Publish Requst
+```protobuf
+message PublishRequest {
+  string subject = 1;
+  bytes body = 2;
+  int32 expirationSeconds = 3;
+}
+```
+- Fetch Request
+```protobuf
+message FetchRequest {
+  string subject = 1;
+  int32 id = 2;
+}
+```
+- Subscribe Request
+```protobuf
+message SubscribeRequest {
+  string subject = 1;
+}
+```
+- RPC Service
+```protobuf
+service Broker {
+  rpc Publish (PublishRequest) returns (PublishResponse);
+  rpc Subscribe(SubscribeRequest) returns (stream MessageResponse);
+  rpc Fetch(FetchRequest) returns (MessageResponse);
+}
+```
+
+# Up and Running
+## Docker 
+```shell
+docker-compose -f deployments/docker-compose.yml up
+```
+## Kubernetes
+```shell
+cd hermod
+helm install hermod
+```
