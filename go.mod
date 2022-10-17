@@ -10,7 +10,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/otel v1.11.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.10.0
-	go.opentelemetry.io/otel/sdk v1.10.0
+	go.opentelemetry.io/otel/sdk v1.11.0
 	google.golang.org/grpc v1.50.0
 	google.golang.org/protobuf v1.28.1
 )
@@ -33,7 +33,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	go.opentelemetry.io/otel/trace v1.11.0 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
-	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
+	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
