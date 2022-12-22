@@ -1,8 +1,8 @@
 # Hermod: Mythic, Mighty, Simple Message Broker 
 
-Hermod is a fast and simple GRPC based broker. It's a mini practical project to sail through the Golang and most common used tools and frameworks including:
+Hermod is a fast and simple gRPC based broker. It's a mini practical project to sail through the Golang and most common used tools and frameworks including:
 
-- GRPC/Protobuf
+- gRPC/Protobuf
 - Concurrent programming
 - Storing data using Cassandra/Postrgres/Redis
 - Load Testing using K6 and simple golang client
