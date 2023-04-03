@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/gocql/gocql v1.3.1
+	github.com/gocql/gocql v1.3.2
 	github.com/lib/pq v1.10.7
 	github.com/prometheus/client_golang v1.14.0
 	github.com/stretchr/testify v1.8.2
