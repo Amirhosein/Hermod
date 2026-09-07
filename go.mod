@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gocql/gocql v1.7.0
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.12.3
 	github.com/prometheus/client_golang v1.20.5
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel v1.44.0
