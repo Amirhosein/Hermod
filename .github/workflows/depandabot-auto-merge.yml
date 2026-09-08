@@ -3,7 +3,7 @@ name: Dependabot auto-approve and auto-merge
 on:
   pull_request:
     branches:
-      - main
+      - master
 
 permissions:
   contents: write
