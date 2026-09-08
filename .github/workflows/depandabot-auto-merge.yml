@@ -14,21 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
-      - name: Debug - Check token
-        run: |
-          echo "Token length: ${#GH_TOKEN}"
-          echo "Token starts with: ${GH_TOKEN:0:4}"
-          gh auth status
-        env:
-          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
       - name: Approve Dependabot PR
         run: gh pr review --approve "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Enable auto-merge
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
