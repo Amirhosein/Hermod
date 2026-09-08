@@ -14,6 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
+      - name: Debug - Check token
+        run: |
+          echo "Token length: ${#GH_TOKEN}"
+          echo "Token starts with: ${GH_TOKEN:0:4}"
+          gh auth status
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
       - name: Approve Dependabot PR
         run: gh pr review --approve "$PR_URL"
         env:
